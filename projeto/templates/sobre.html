@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% block conteudo %}
+    <h2 style="text-align: center;">Notas dos Alunos</h2>
+    <hr>
+    <form class="form-group" action="{{url_for('diario')}}" method="POST">
+        <label>Aluno</label>
+        <input class="form-control" type="text" name="aluno" required>
+        <label>Nota</label>
+        <input class="form-control" type="text" name="nota">
+        <button class="btn btn-success">Adicionar</button>
+        
+    </form>
+    <br>
+ 
+        {% for registro in registros %}
+        <p>
+            <a class="btn btn-secondary" data-bs-toggle="collapse" href="#collapse_{{registro.aluno}}" role="button" aria-expanded="false" aria-controls="#collapse_{{registro.aluno}}">
+                {{registro.aluno}}
+            </a>
+          </p>
+          <div class="collapse" id="collapse_{{registro.aluno}}">
+            <div class="card card-body">
+                {{registro.nota}}
+            </div>
+          </div>
+        {% endfor %}
+{% endblock %}

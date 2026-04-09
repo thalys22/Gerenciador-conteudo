@@ -1,0 +1,42 @@
+{% extends 'base.html' %} {% block conteudo %}
+<h2 class="text-center">Lista de Livros</h2>
+<hr />
+<a class="btn btn-secondary" href="{{url_for('adiciona_livro')}}">Adicionar Livro</a>
+<br />
+<br />
+<table class="table table-bordered table-hover">
+  <thead class="table-dark">
+    <tr>
+      <th>Id</th>
+      <th>Nome</th>
+      <th>Descricao</th>
+      <th>Valor</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for livro in livros %}
+    <tr>
+      <td>{{livro.id}}</td>
+      <td>{{livro.nome}}</td>
+      <td>{{livro.descricao}}</td>
+      <td>{{livro.valor}}</td>
+      <td>
+        <a href="{{livro.id}}/atualiza_livro" class="btn btn-secondary btn-xs">Editar</a>
+        <a href="{{livro.id}}/remove_livro" class="btn btn-danger btn-xs" onclick="return confirm('Deseja excluir esse registro ?')">Excluir</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if livros.has_prev %}
+<a href="{{url_for('lista_livros', page=livros.prev_num)}}">Livros Anteriores</a>
+{% else %}
+  Livros Listados
+{% endif %}
+{% if livros.has_next %}
+<a href="{{url_for('lista_livros', page=livros.next_num)}}">Proximos Livros</a>
+{% else %}
+  Livros Listados
+{% endif %}
+{% endblock conteudo %}
