@@ -1,7 +1,24 @@
-from projeto import app, db
+from flask import Flask, render_template, request
 from flask import render_template, request, redirect, url_for
-from projeto.lista_filmes import resultado_filmes
-from projeto.livro import livro
+from .lista_filmes import resultado_filmes
+from .extensions import db
+from .livro import livro
+import click
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/livros.sqlite3'
+
+db.init_app(app)
+
+# Do not auto-create database tables on import (serverless deployments have
+# readonly/ephemeral filesystems). Use the `flask create-db` CLI command locally.
+
+@app.cli.command('create-db')
+def create_db_command():
+  """Create the database tables."""
+  with app.app_context():
+    db.create_all()
+    click.echo('Database tables created.')
 
 conteudos = []
 registros = []
@@ -96,3 +113,10 @@ def remove_livro(id):
   db.session.delete(livro_bd)
   db.session.commit()
   return redirect(url_for('lista_livros'))
+
+if __name__ == '__main__':
+  app.run(debug=True)
+  
+
+# comando para inicar o servidor flask --app projeto run --debug
+# pip list > requirements.txt

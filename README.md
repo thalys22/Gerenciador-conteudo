@@ -1,4 +1,67 @@
+Projeto Flask — correção de importação circular e instruções
 
+Resumo
+
+- **Motivo:** Havia uma importação circular entre `app.py` e o modelo `livro.py` (cada um importava algo do outro), causando erros ao iniciar/usar a aplicação.
+- **Solução aplicada:** centralizei a instância `db` em `projeto/extensions.py`, atualizei os imports para usar esse `db` compartilhado e removi imports top-level que causavam referências circulares.
+
+Arquivos alterados / adicionados
+
+- **`projeto/extensions.py`**: novo arquivo com a instância `db = SQLAlchemy()` centralizada.
+- **`projeto/app.py`**: agora importa `db` de `extensions`, importa o modelo `livro` após inicializar `db`, e adiciona um comando CLI `flask create-db`.
+- **`projeto/livro.py`**: passou a importar `db` de `extensions` (antes importava de módulos que causavam ciclo).
+- **`projeto/create_db.py`**: script de conveniência para criar as tabelas localmente (usa `db` de `extensions`).
+- **`projeto/list_tables.py`**: script auxiliar (opcional) para listar tabelas da base SQLite.
+
+Como usar (desenvolvimento)
+
+1. Ative o ambiente virtual (PowerShell):
+
+```powershell
+cd projeto
+& ..\.venv\Scripts\Activate.ps1
+```
+
+2. Criar as tabelas no banco (opção A: Flask CLI):
+
+```powershell
+flask --app app create-db
+```
+
+Ou (opção B: script direto):
+
+```powershell
+python create_db.py
+```
+
+3. Rodar o servidor de desenvolvimento:
+
+```powershell
+flask --app app run --debug
+# abra http://127.0.0.1:5000
+```
+
+Usando o pacote `projeto`
+
+Depois de tornar o diretório `projeto` um pacote (há um `projeto/__init__.py` nesse repositório), você pode executar o app diretamente referenciando o pacote. Exemplos:
+
+```powershell
+# rodar o servidor usando o pacote
+flask --app projeto run --debug
+
+# criar o banco usando o comando CLI adicionado
+flask --app projeto create-db
+```
+
+Notas e recomendações
+
+- Para aplicações maiores/reais, use migrações (Flask-Migrate / Alembic) em vez de `db.create_all()`.
+- Se preferir deixar o projeto como pacote Python (importando `projeto.extensions`), adicione um `projeto/__init__.py` e ajuste o `FLASK_APP`/caminhos conforme necessário.
+- Se quiser, eu posso: criar `projeto/__init__.py`, adicionar `Flask-Migrate` e um comando `flask db migrate`/`flask db upgrade`.
+
+Contato
+
+- Se precisar que eu rode os comandos aqui e verifique a rota `/livros`, me avise que eu executo e confirmo.
 
 # App Flask - Gerenciador de Catálogo e Registros
 
@@ -7,22 +70,24 @@ Aplicação web desenvolvida em Python com Flask para o gerenciamento de um cat�
 ### 1. Visão Geral
 
 A aplicação expõe uma interface web focada na simplicidade de uso para gerenciar diferentes tipos de informações. Inclui:
-* **Módulo de Livros (CRUD):** Permite cadastrar, listar (com paginação), atualizar e excluir livros do acervo, com persistência em banco de dados via SQLAlchemy.
-* **Módulo de Diário/Notas:** Formulário para registrar alunos e suas respectivas notas.
-* **Módulo de Filmes:** Rota dinâmica que lista filmes baseados em propriedades específicas.
-* **Anotações Rápidas:** Sistema simples na página inicial para adicionar conteúdos em uma lista temporária.
+
+- **Módulo de Livros (CRUD):** Permite cadastrar, listar (com paginação), atualizar e excluir livros do acervo, com persistência em banco de dados via SQLAlchemy.
+- **Módulo de Diário/Notas:** Formulário para registrar alunos e suas respectivas notas.
+- **Módulo de Filmes:** Rota dinâmica que lista filmes baseados em propriedades específicas.
+- **Anotações Rápidas:** Sistema simples na página inicial para adicionar conteúdos em uma lista temporária.
 
 **Autor:** Thalys dos Santos
 **Versão:** 1.0.0
 
 ### 2. Arquitetura (Camadas)
 
-* **Interface (App):** Templates HTML (Jinja2) renderizados pelo Flask (`templates/`), responsáveis pela exibição dos dados e formulários de entrada.
-* **Controllers/Rotas:** O arquivo `routes.py` gerencia as requisições HTTP (GET/POST), processa dados de formulários e orquestra a lógica de navegação.
-* **Application/Service:** Lógica de listagem de filmes encapsulada em `lista_filmes.py`.
-* **Infrastructure (Banco de Dados):** Uso do `Flask-SQLAlchemy` para mapeamento objeto-relacional (ORM) e persistência da entidade Livro no banco de dados SQLite.
+- **Interface (App):** Templates HTML (Jinja2) renderizados pelo Flask (`templates/`), responsáveis pela exibição dos dados e formulários de entrada.
+- **Controllers/Rotas:** O arquivo `routes.py` gerencia as requisições HTTP (GET/POST), processa dados de formulários e orquestra a lógica de navegação.
+- **Application/Service:** Lógica de listagem de filmes encapsulada em `lista_filmes.py`.
+- **Infrastructure (Banco de Dados):** Uso do `Flask-SQLAlchemy` para mapeamento objeto-relacional (ORM) e persistência da entidade Livro no banco de dados SQLite.
 
 **Pipeline de Dados**
+
 1. Usuário acessa as rotas e interage com os formulários HTML.
 2. Dados enviados via POST são capturados pelo `request.form` no Flask.
 3. Para registros temporários (Diário/Conteúdos), os dados são anexados em listas na memória do servidor.
@@ -89,7 +154,7 @@ app_flask/
 │       ├── novo_livro.html
 │       └── atualiza_livro.html
 │
-├── instance/                 
+├── instance/
 │   └── livros.sqlite3        # Banco de dados persistente
 │
 ├── requirements.txt          # Dependências do projeto
@@ -135,27 +200,19 @@ Acesso via navegador: `http://127.0.0.1:5000/`
 
 Executado via `routes.py` utilizando o modelo `livro.py`.
 
--   **Create:** `adiciona_livro()` captura os dados do form e usa `db.session.add()`.
-    
--   **Read:** `lista_livros()` consulta o banco usando `livro.query.paginate()` para organizar a exibição em páginas (2 itens por página).
-    
--   **Update:** `atualiza_livro(id)` filtra pelo ID e atualiza os campos via `.update({})`.
-    
--   **Delete:** `remove_livro(id)` exclui o registro permanentemente do banco com `db.session.delete()`.
-    
+- **Create:** `adiciona_livro()` captura os dados do form e usa `db.session.add()`.
+- **Read:** `lista_livros()` consulta o banco usando `livro.query.paginate()` para organizar a exibição em páginas (2 itens por página).
+- **Update:** `atualiza_livro(id)` filtra pelo ID e atualiza os campos via `.update({})`.
+- **Delete:** `remove_livro(id)` exclui o registro permanentemente do banco com `db.session.delete()`.
 
 ### 8. Modelo de Dados
 
 A entidade principal do banco de dados é gerida pelo SQLAlchemy em `livro.py`:
 
--   `id`: Chave Primária (Integer).
-    
--   `nome`: Título do livro (String, max 50).
-    
--   `descricao`: Resumo da obra (String, max 100).
-    
--   `valor`: Preço ou avaliação numérica (Integer).
-    
+- `id`: Chave Primária (Integer).
+- `nome`: Título do livro (String, max 50).
+- `descricao`: Resumo da obra (String, max 100).
+- `valor`: Preço ou avaliação numérica (Integer).
 
 ### 9. Endpoints Principais
 
@@ -214,20 +271,15 @@ A captação de dados é feita diretamente pelo objeto `request.form` do Flask. 
 ### 11. Exemplos de Uso (Interface)
 
 1.  **Anotações:** Acesse a rota `/` (Home), digite um texto no campo e clique em enviar. O conteúdo aparecerá imediatamente listado abaixo.
-    
 2.  **Gerir Livros:** Acesse `/livros` para ver o acervo. Clique no botão de adicionar para inserir "O Senhor dos Anéis", descrição "Fantasia Épica" e valor "50". Salve e veja a lista atualizada.
-    
 3.  **Páginas dinâmicas:** Acesse `/filmes/acao` para que o servidor processe a propriedade "acao" e retorne a lista de filmes correspondente (via `lista_filmes.py`).
-    
 
 ### 12. Gestão de Dados Temporários vs Persistentes
 
 O aplicativo trabalha com dois tipos de retenção de dados:
 
--   **Memória (Volátil):** As variáveis globais `conteudos = []` e `registros = []` armazenam as anotações e o diário de notas. Estes dados são perdidos se o servidor for reiniciado.
-    
--   **Banco de Dados (Persistente):** O catálogo de livros utiliza o SQLite. Os dados sobrevivem à reinicialização da aplicação.
-    
+- **Memória (Volátil):** As variáveis globais `conteudos = []` e `registros = []` armazenam as anotações e o diário de notas. Estes dados são perdidos se o servidor for reiniciado.
+- **Banco de Dados (Persistente):** O catálogo de livros utiliza o SQLite. Os dados sobrevivem à reinicialização da aplicação.
 
 ### 13. Feedback e Navegação (Observabilidade UI)
 
@@ -235,16 +287,11 @@ A interface orquestra a navegação do usuário através de redirecionamentos di
 
 ### 14. Tecnologias
 
--   **Flask:** Microframework Web e roteamento HTTP.
-    
--   **Flask-SQLAlchemy:** ORM para manipulação do banco de dados relacional.
-    
--   **SQLite3:** Banco de dados integrado, leve e ideal para ambientes de desenvolvimento.
-    
--   **Jinja2:** Motor de templates para renderização dinâmica e interpolação de variáveis em HTML.
-    
--   **HTML5/CSS3:** Estruturação visual das páginas.
-    
+- **Flask:** Microframework Web e roteamento HTTP.
+- **Flask-SQLAlchemy:** ORM para manipulação do banco de dados relacional.
+- **SQLite3:** Banco de dados integrado, leve e ideal para ambientes de desenvolvimento.
+- **Jinja2:** Motor de templates para renderização dinâmica e interpolação de variáveis em HTML.
+- **HTML5/CSS3:** Estruturação visual das páginas.
 
 ### 15. Scripts Úteis
 
@@ -267,7 +314,6 @@ Lógica extraída para processar e retornar dicionários/listas de filmes para a
 ### 16. Deploy e Infraestrutura
 
 Para implantação em plataformas na nuvem (como Render, Heroku ou Azure), recomenda-se a substituição do servidor de desenvolvimento nativo do Flask por um WSGI Server robusto de produção, como o **Gunicorn** (`gunicorn projeto:app`), e a parametrização da porta de rede através de variáveis de ambiente (`PORT`).
-
 
 ### 17. Créditos
 

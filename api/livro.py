@@ -1,4 +1,5 @@
-from projeto import db
+from .extensions import db
+
 class livro(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(50))
