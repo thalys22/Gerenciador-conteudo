@@ -3,22 +3,23 @@ from flask import render_template, request, redirect, url_for
 from .lista_filmes import resultado_filmes
 from .extensions import db
 from .livro import livro
-import click
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/livros.sqlite3'
+import os
+
+# Use absolute path to the SQLite file so serverless runtime can find it.
+# This resolves errors like: "sqlite3.OperationalError: unable to open database file".
+basedir = os.path.abspath(os.path.dirname(__file__))
+db_file = os.path.join(basedir, 'instance', 'livros.sqlite3')
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_file}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 
 # Do not auto-create database tables on import (serverless deployments have
 # readonly/ephemeral filesystems). Use the `flask create-db` CLI command locally.
 
-@app.cli.command('create-db')
-def create_db_command():
-  """Create the database tables."""
-  with app.app_context():
-    db.create_all()
-    click.echo('Database tables created.')
+# Database creation in deployed/serverless environments is handled separately.
 
 conteudos = []
 registros = []
@@ -113,6 +114,7 @@ def remove_livro(id):
   db.session.delete(livro_bd)
   db.session.commit()
   return redirect(url_for('lista_livros'))
+
 
 if __name__ == '__main__':
   app.run(debug=True)
