@@ -39,23 +39,7 @@ def principal():
         conteudos=conteudos
     )
 
-@app.route('/diario', methods=["GET", "POST"])
-def diario():
-    if request.method == "POST":
-        if request.form.get("aluno") and request.form.get("nota"):
-            aluno = request.form.get("aluno") 
-            nota = request.form.get("nota")
-            registros.append(
-                {
-                    "aluno": aluno,
-                    "nota": nota
-                }
-            )
-    return render_template(
-        "sobre.html",
-        registros=registros  
-    )
-    
+
 @app.route('/filmes/<propriedade>', methods=["GET", "POST"])
 def lista_filmes(propriedade):
     return render_template(
