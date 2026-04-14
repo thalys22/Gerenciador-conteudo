@@ -1,23 +1,27 @@
-from flask import Flask, render_template, request
-from flask import render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for
 from .lista_filmes import resultado_filmes
 from .extensions import db
 from .livro import livro
-
-app = Flask(__name__)
+from dotenv import load_dotenv
 import os
 
-# Use absolute path to the SQLite file so serverless runtime can find it.
-# This resolves errors like: "sqlite3.OperationalError: unable to open database file".
-basedir = os.path.abspath(os.path.dirname(__file__))
-db_file = os.path.join(basedir, 'instance', 'livros.sqlite3')
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_file}"
+app = Flask(__name__)
+
+
+# 1. Carrega todas as variáveis do nosso arquivo .env
+load_dotenv()
+
+# 2. Ensina a aplicação de onde buscar a URL do banco Supabase
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# 3. Inicia o banco de dados na aplicação principal
 db.init_app(app)
 
-# Do not auto-create database tables on import (serverless deployments have
-# readonly/ephemeral filesystems). Use the `flask create-db` CLI command locally.
+# 4. Automático: Confere e cria as tabelas assim que o app ligar
+with app.app_context():
+    db.create_all()
+
 
 # Database creation in deployed/serverless environments is handled separately.
 
